@@ -2067,10 +2067,54 @@ namespace HoudiniEngineUnity
 	public static string GetRawOperatorName(string assetOpName)
 	{
 	    string result = assetOpName;
-	    int lastSlash = assetOpName.LastIndexOf('/');
+	    result = result.Replace(':', '_');
+	    int lastSlash = result.LastIndexOf('/');
 	    if (lastSlash != -1)
 	    {
-		result = assetOpName.Substring(lastSlash+1);
+		result = result.Substring(lastSlash+1);
+	    }
+
+	    return result;
+	}
+
+	public static GameObject GetPrefabFromPath(string path)
+	{
+	    GameObject result = null;
+	    if (path.Contains("Resources/"))
+	    {
+		// Remove up to Resources/
+		string resPath = path;
+		int resIndex = resPath.IndexOf("Resources/");
+		if (resIndex > 0)
+		{
+		    resPath = resPath.Substring(resIndex);
+		}
+
+		if (resPath.StartsWith("Resources/"))
+		{
+		    resPath = resPath.Replace("Resources/", "");
+
+		    // Remove file extension
+		    int extIndex = resPath.LastIndexOf(".");
+		    if (extIndex > 0)
+		    {
+		        resPath = resPath.Substring(0, extIndex);
+		    }
+
+		    //HEU_Logger.Log("Resource path: " + resPath);
+		    result = Resources.Load<GameObject>(resPath) as GameObject;
+		}
+	    }
+	    else if (!path.StartsWith("Assets"))
+	    {
+	        // Attempt to load from resources if it doesn't have Assets/ in path
+	        result = Resources.Load<GameObject>(path) as GameObject;
+	    }
+
+	    if (result == null)
+	    {
+	        HEU_AssetDatabase.ImportAsset(path, HEU_AssetDatabase.HEU_ImportAssetOptions.Default);
+	        result = HEU_AssetDatabase.LoadAssetAtPath(path, typeof(GameObject)) as GameObject;
 	    }
 
 	    return result;

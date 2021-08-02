@@ -366,6 +366,7 @@ namespace HoudiniEngineUnity
 
 	public bool BakeUpdateKeepPreviousTransformValues { get { return _bakeUpdateKeepPreviousTransformValues; } set { _bakeUpdateKeepPreviousTransformValues = value; } }
 
+	// If false, pauses all cooking on this HDA until set back to true. Meant for unit testing use.
 	[SerializeField]
 	private bool _pauseCooking = false;
 	public bool PauseCooking { get { return _pauseCooking; } set { _pauseCooking = value; }}
@@ -408,7 +409,7 @@ namespace HoudiniEngineUnity
 #pragma warning restore 0414
 
 	[SerializeField]
-	private bool _curveDisableScaleRotation = false;
+	private bool _curveDisableScaleRotation = true;
 
 	public bool CurveDisableScaleRotation { get { return _curveDisableScaleRotation; } set { _curveDisableScaleRotation = value; } }
 
@@ -839,7 +840,7 @@ namespace HoudiniEngineUnity
 	    }
 	    else
 	    {
-		if (_cookStatus == AssetCookStatus.NONE)
+		if (_cookStatus == AssetCookStatus.NONE || _cookStatus == AssetCookStatus.POSTLOAD)
 		{
 		    RecookBlocking(bCheckParametersChanged, bSkipCookCheck, 
 			bUploadParameters, bUploadParameterPreset: false, 
@@ -1091,7 +1092,17 @@ namespace HoudiniEngineUnity
 	    UpdateTotalCookCount();
 
 	    // Cache asset info
-	    _assetName = HEU_SessionManager.GetString(_assetInfo.nameSH, session);
+	    string realName = HEU_SessionManager.GetString(_assetInfo.nameSH, session);
+
+	    if (!HEU_PluginSettings.ShortenFolderPaths || realName.Length < 3)
+	    {
+	        _assetName = realName;
+	    }
+	    else
+	    {
+		_assetName = realName.Substring(0, 3) + this.GetHashCode();
+	    }
+
 	    _assetOpName = HEU_SessionManager.GetString(_assetInfo.fullOpNameSH, session);
 	    _assetHelp = HEU_SessionManager.GetString(_assetInfo.helpTextSH, session);
 
@@ -2611,6 +2622,15 @@ namespace HoudiniEngineUnity
 	    // Instancing - process part instances first, then do object instances.
 	    // This assures that if objects being instanced have all their parts completed.
 
+	    // Clear part instances, to make sure that the object instances don't overwrite the part instances.
+	    foreach (HEU_ObjectNode objNode in _objectNodes)
+	    {
+		if (objNode.IsInstancer())
+		{
+		    objNode.ClearObjectInstances(session);
+		}
+	    }
+
 	    foreach (HEU_ObjectNode objNode in _objectNodes)
 	    {
 		objNode.GeneratePartInstances(session);
@@ -3966,7 +3986,7 @@ namespace HoudiniEngineUnity
 
 		}
 
-		_assetCacheFolderPath = HEU_AssetDatabase.CreateAssetCacheFolder(suggestedFileName);
+		_assetCacheFolderPath = HEU_AssetDatabase.CreateAssetCacheFolder(suggestedFileName, this.GetHashCode());
 	    }
 	    return _assetCacheFolderPath;
 	}

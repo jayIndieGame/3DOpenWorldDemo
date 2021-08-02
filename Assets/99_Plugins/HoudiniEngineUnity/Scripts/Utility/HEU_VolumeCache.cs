@@ -715,8 +715,8 @@ namespace HoudiniEngineUnity
 	    }
 
 	    // The TerrainData and TerrainLayer files needs to be saved out if we create them. This creates the relative folder
-	    // path from the Asset's cache folder: {assetCache}/{geo name}/Terrain/Tile{tileIndex}/...
-	    string relativeFolderPath = HEU_Platform.BuildPath(_ownerNode.GeoName, HEU_Defines.HEU_FOLDER_TERRAIN, HEU_Defines.HEU_FOLDER_TILE + TileIndex);
+	    // path from the Asset's cache folder: {assetCache}/{object name}/{geo name}/Terrain/Tile{tileIndex}/...
+	    string relativeFolderPath = HEU_Platform.BuildPath(_ownerNode.ObjectNode.ObjectName, _ownerNode.GeoName, HEU_Defines.HEU_FOLDER_TERRAIN, HEU_Defines.HEU_FOLDER_TILE + TileIndex);
 
 	    if (bRebuild)
 	    {
@@ -1430,7 +1430,7 @@ namespace HoudiniEngineUnity
 
 	    HEU_TestHelpers.AssertTrueLogEquivalent(this._tileIndex, other._tileIndex, ref bResult, header, "_tileIndex");
 	    HEU_TestHelpers.AssertTrueLogEquivalent(this._isDirty, other._isDirty, ref bResult, header, "_isDirty");
-	    HEU_TestHelpers.AssertTrueLogEquivalent(this._geoName, other._geoName, ref bResult, header, "_geoName");
+	    // HEU_TestHelpers.AssertTrueLogEquivalent(this._geoName, other._geoName, ref bResult, header, "_geoName");
 	    // HEU_TestHelpers.AssertTrueLogEquivalent(this._objName, other._objName, ref bResult, header, "_objName");
 
 	    HEU_TestHelpers.AssertTrueLogEquivalent(this._terrainData.ToTestObject(), other._terrainData.ToTestObject(), ref bResult, header, "_terrainData");

@@ -188,7 +188,18 @@ namespace HoudiniEngineUnity
 
 	    _partOutputType = partOutputType;
 	    _partType = partInfo.type;
-	    _partName = HEU_SessionManager.GetString(partInfo.nameSH, session);
+
+
+	    string realName = HEU_SessionManager.GetString(partInfo.nameSH, session);
+	    if (!HEU_PluginSettings.ShortenFolderPaths || realName.Length < 3)
+	    {
+		_partName = realName;
+	    }
+	    else
+	    {
+		_partName = realName.Substring(0, 3) + this.GetHashCode();
+	    }
+
 	    _isPartInstanced = partInfo.isInstanced;
 	    _partPointCount = partInfo.pointCount;
 	    _isPartEditable = isEditable;
@@ -831,6 +842,15 @@ namespace HoudiniEngineUnity
 		}
 	    }
 
+	    HAPI_AttributeInfo useUnityInstanceFlagsInfo  = new HAPI_AttributeInfo();
+	    int[] useUnityInstanceFlags = new int[0];
+	    bool copyParentFlags = true;
+	    HEU_GeneralUtility.GetAttribute(session, _geoID, _partID, HEU_Defines.UNITY_USE_INSTANCE_FLAGS_ATTR, ref useUnityInstanceFlagsInfo, ref useUnityInstanceFlags, session.GetAttributeIntData);
+	    if (useUnityInstanceFlagsInfo.exists && useUnityInstanceFlags.Length > 0 && useUnityInstanceFlags[0] == 1)
+	    {
+		copyParentFlags = false;
+	    }
+
 	    SetObjectInstancer(true);
 	    ObjectInstancesBeenGenerated = true;
 
@@ -872,43 +892,7 @@ namespace HoudiniEngineUnity
 
 		    if (!loadedUnityObjectMap.TryGetValue(instancePathAttrValues[i], out unitySrcGO))
 		    {
-			// First try loading from Resources/ as its faster
-			if (instancePathAttrValues[i].Contains("Resources/"))
-			{
-			    // Remove up to Resources/
-			    string resPath = instancePathAttrValues[i];
-			    int resIndex = resPath.IndexOf("Resources/");
-			    if (resIndex > 0)
-			    {
-				resPath = resPath.Substring(resIndex);
-			    }
-
-			    if (resPath.StartsWith("Resources/"))
-			    {
-				resPath = resPath.Replace("Resources/", "");
-
-				// Remove file extension
-				int extIndex = resPath.LastIndexOf(".");
-				if (extIndex > 0)
-				{
-				    resPath = resPath.Substring(0, extIndex);
-				}
-
-				//HEU_Logger.Log("Resource path: " + resPath);
-				unitySrcGO = Resources.Load<GameObject>(resPath) as GameObject;
-			    }
-			}
-			else if (!instancePathAttrValues[i].StartsWith("Assets"))
-			{
-			    // Attempt to load from resources if it doesn't have Assets/ in path
-			    unitySrcGO = Resources.Load<GameObject>(instancePathAttrValues[i]) as GameObject;
-			}
-
-			if (unitySrcGO == null)
-			{
-			    HEU_AssetDatabase.ImportAsset(instancePathAttrValues[i], HEU_AssetDatabase.HEU_ImportAssetOptions.Default);
-			    unitySrcGO = HEU_AssetDatabase.LoadAssetAtPath(instancePathAttrValues[i], typeof(GameObject)) as GameObject;
-			}
+			unitySrcGO = HEU_GeneralUtility.GetPrefabFromPath(instancePathAttrValues[i]);
 
 			if (unitySrcGO == null)
 			{
@@ -955,7 +939,7 @@ namespace HoudiniEngineUnity
 
 		CreateNewInstanceFromObject(unitySrcGO, (i + 1), partTransform, ref instanceTransforms[i],
 			HEU_Defines.HEU_INVALID_NODE_ID, instancePathAttrValues[i], rotationOffset, scaleOffset, instancePrefixes,
-			collisionSrcGO);
+			collisionSrcGO, copyParentFlags: copyParentFlags);
 	    }
 
 	    if (tempGO != null)
@@ -973,7 +957,7 @@ namespace HoudiniEngineUnity
 	/// <param name="hapiTransform">HAPI transform to apply to the new instance.</param>
 	private void CreateNewInstanceFromObject(GameObject sourceObject, int instanceIndex, Transform parentTransform, ref HAPI_Transform hapiTransform,
 		HAPI_NodeId instancedObjectNodeID, string instancedObjectPath, Vector3 rotationOffset, Vector3 scaleOffset, string[] instancePrefixes,
-		GameObject collisionSrcGO)
+		GameObject collisionSrcGO, bool copyParentFlags = true)
 	{
 	    GameObject newInstanceGO = null;
 
@@ -995,7 +979,10 @@ namespace HoudiniEngineUnity
 	    // To get the instance output name, we pass in the instance index. The actual name will be +1 from this.
 	    newInstanceGO.name = HEU_GeometryUtility.GetInstanceOutputName(PartName, instancePrefixes, instanceIndex);
 
-	    HEU_GeneralUtility.CopyFlags(OutputGameObject, newInstanceGO, true);
+	    if (copyParentFlags)
+	    {
+	        HEU_GeneralUtility.CopyFlags(OutputGameObject, newInstanceGO, true);
+	    }
 	
 	    Transform instanceTransform = newInstanceGO.transform;
 	    HEU_HAPIUtility.ApplyLocalTransfromFromHoudiniToUnityForInstance(ref hapiTransform, instanceTransform);
@@ -1449,7 +1436,7 @@ namespace HoudiniEngineUnity
 		    // e.g.: "Assets/HoudiniEngineAssetCache/Working/simple_heightfield/heightfield_noise1/Terrain/Tile0/TerrainData.asset"
 		    if (match.Success && match.Groups.Count == 5)
 		    {
-			bakedTerrainPath = HEU_Platform.BuildPath(bakedTerrainPath, match.Groups[3].Value, match.Groups[4].Value);
+			bakedTerrainPath = HEU_Platform.BuildPath(bakedTerrainPath, match.Groups[2].Value, match.Groups[3].Value, match.Groups[4].Value);
 		    }
 		    else
 		    {
@@ -1466,7 +1453,7 @@ namespace HoudiniEngineUnity
 			Match match_pdg = reg_pdg.Match(sourceAssetPath);
 			if (match_pdg.Success)
 			{
-			    bakedTerrainPath = HEU_Platform.BuildPath(bakedTerrainPath, match_pdg.Groups[3].Value, match_pdg.Groups[5].Value);
+			    bakedTerrainPath = HEU_Platform.BuildPath(bakedTerrainPath, match.Groups[2].Value, match_pdg.Groups[3].Value, match_pdg.Groups[5].Value);
 			}
 			else{
 			    string supposedTerrainPath = HEU_Platform.BuildPath(bakedTerrainPath, match.Groups[3].Value, match.Groups[4].Value);
@@ -2178,7 +2165,7 @@ namespace HoudiniEngineUnity
 
 	    // Skip _partId, _objectNodeID, _geoId
 
-	    HEU_TestHelpers.AssertTrueLogEquivalent(this._partName, other._partName, ref bResult, header, "_partName");
+	    //HEU_TestHelpers.AssertTrueLogEquivalent(this._partName, other._partName, ref bResult, header, "_partName");
 	    HEU_TestHelpers.AssertTrueLogEquivalent(this._partType, other._partType, ref bResult, header, "_partType");
 
 	    // Skip HEU_GeoNode

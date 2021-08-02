@@ -40,6 +40,7 @@ namespace HoudiniEngineUnity
 	private static bool _showEnvironment = true;
 	private static bool _showCooking = true;
 	private static bool _showGeometry = true;
+	private static bool _showMaterials = true;
 	private static bool _showSession = false;
 	private static bool _showTools = false;
 	private static bool _showAdvanced = false;
@@ -99,6 +100,7 @@ namespace HoudiniEngineUnity
 		DrawSection(this, "ENVIRONMENT", this.DrawDetailsEnvironment, ref _showEnvironment);
 		DrawSection(this, "COOKING", this.DrawDetailsCooking, ref _showCooking);
 		DrawSection(this, "GEOMETRY", this.DrawDetailsGeometry, ref _showGeometry);
+		DrawSection(this, "MATERIALS", this.DrawDetailsMaterials, ref _showMaterials);
 		DrawSection(this, "SESSION", this.DrawSessionSettings, ref _showSession);
 		DrawSection(this, "TOOLS", this.DrawToolSettings, ref _showTools);
 		DrawSection(this, "ADVANCED", this.DrawAdvancedSettings, ref _showAdvanced);
@@ -468,6 +470,18 @@ namespace HoudiniEngineUnity
 		}
 	    }
 
+	    // Setting for unit tests only
+	    //HEU_EditorUI.DrawSeparator();
+	    //{
+	//	bool oldValue = HEU_PluginSettings.ShortenFolderPaths;
+	//	bool newValue = HEU_EditorUI.DrawToggleLeft(oldValue, "Use Shorten paths");
+	//	if (newValue != oldValue)
+	//	{
+	//	    HEU_PluginSettings.ShortenFolderPaths = newValue;
+	//	    bChanged = true;
+	//	}
+	    //}
+
 	    return bChanged;
 	}
 
@@ -597,6 +611,48 @@ namespace HoudiniEngineUnity
 	    HEU_EditorUI.DrawSeparator();
 
 	    EditorGUIUtility.labelWidth = 0;
+
+	    return bChanged;
+	}
+
+	private bool DrawDetailsMaterials()
+	{
+	    bool bChanged = false;
+
+	    HEU_PipelineType pipeline = HEU_RenderingPipelineDefines.GetPipeline();
+
+	    bool isBuiltInRenderPipeline = pipeline == HEU_PipelineType.BiRP;
+
+	    // Force set UseLegacyShaders to prevent possible locked state
+	    if (!isBuiltInRenderPipeline && HEU_PluginSettings.UseLegacyShaders == true)
+	    {
+		HEU_PluginSettings.UseLegacyShaders = false;
+	    }
+
+	    using (new EditorGUI.DisabledScope(!isBuiltInRenderPipeline))
+	    {
+		bool oldValue = HEU_PluginSettings.UseLegacyShaders;
+		bool newValue = HEU_EditorUI.DrawToggleLeft(oldValue, "Use Legacy shaders as default", "Use the legacy shaders in case your device doesn't support shader model 3.0. Only supported for the built-in render pipeline.");
+		if (newValue != oldValue)
+		{
+		    HEU_PluginSettings.UseLegacyShaders = newValue;
+		    bChanged = true;
+		}
+	    }
+
+	    bool isUsingLegacyShaders = HEU_PluginSettings.UseLegacyShaders;
+
+	    using (new EditorGUI.DisabledScope(isUsingLegacyShaders))
+	    {
+		bool oldValue = HEU_PluginSettings.UseSpecularShader;
+		bool newValue = HEU_EditorUI.DrawToggleLeft(oldValue, "Use Specular shader as default", "Use the specular workflow instead of the metallic one.");
+		if (newValue != oldValue)
+		{
+		    HEU_PluginSettings.UseSpecularShader = newValue;
+		    bChanged = true;
+		}
+	    }
+	    HEU_EditorUI.DrawSeparator();
 
 	    return bChanged;
 	}
@@ -747,6 +803,16 @@ namespace HoudiniEngineUnity
 		if (oldValue != newValue && !string.IsNullOrEmpty(newValue))
 		{
 		    HEU_PluginSettings.RenderedCollisionGroupName = newValue;
+		    bChanged = true;
+		}
+	    }
+	    HEU_EditorUI.DrawSeparator();
+	    {
+		string oldValue = HEU_PluginSettings.RenderedConvexCollisionGroupName;
+		string newValue = EditorGUILayout.DelayedTextField("Rendered Convex Collision Group", oldValue);
+		if (oldValue != newValue && !string.IsNullOrEmpty(newValue))
+		{
+		    HEU_PluginSettings.RenderedConvexCollisionGroupName = newValue;
 		    bChanged = true;
 		}
 	    }

@@ -150,6 +150,20 @@ namespace HoudiniEngineUnity
 	    }
 	}
 
+	public static string RenderedConvexCollisionGroupName
+	{
+	    get
+	    {
+		string sValue = HEU_Defines.DEFAULT_RENDERED_CONVEX_COLLISION_GEO;
+		HEU_PluginStorage.Instance.Get("HAPI_RenderedConvexCollisionGroupName", out sValue, sValue);
+		return sValue;
+	    }
+	    set
+	    {
+		HEU_PluginStorage.Instance.Set("HAPI_RenderedConvexCollisionGroupName", value);
+	    }
+	}
+
 	public static string UnityMaterialAttribName
 	{
 	    get
@@ -590,16 +604,27 @@ namespace HoudiniEngineUnity
 	{
 	    get
 	    {
-		string path = HEU_Defines.DEFAULT_STANDARD_SHADER;
+		string path;
 
 		HEU_PipelineType pipeline = HEU_RenderingPipelineDefines.GetPipeline();
 		if (pipeline == HEU_PipelineType.HDRP)
 		{
-		    path = HEU_Defines.DEFAULT_STANDARD_SHADER_HDRP;
+		    path = HEU_PluginSettings.UseSpecularShader ? HEU_Defines.DEFAULT_STANDARD_SHADER_HDRP_SPECULAR : HEU_Defines.DEFAULT_STANDARD_SHADER_HDRP;
 		}
 		else if (pipeline == HEU_PipelineType.URP)
 		{
-		    path = HEU_Defines.DEFAULT_STANDARD_SHADER_URP;
+		    path = HEU_PluginSettings.UseSpecularShader ? HEU_Defines.DEFAULT_STANDARD_SHADER_URP_SPECULAR : HEU_Defines.DEFAULT_STANDARD_SHADER_URP;
+		}
+		else
+		{
+		    if (HEU_PluginSettings.UseLegacyShaders)
+		    {
+			path = HEU_Defines.DEFAULT_STANDARD_SHADER_SPECULAR_LEGACY;
+		    }
+		    else
+		    {
+			path = HEU_PluginSettings.UseSpecularShader ? HEU_Defines.DEFAULT_STANDARD_SHADER_SPECULAR : HEU_Defines.DEFAULT_STANDARD_SHADER;
+		    }
 		}
 
 		string ogPath = System.String.Copy(path);
@@ -623,16 +648,27 @@ namespace HoudiniEngineUnity
 	{
 	    get
 	    {
-		string path = HEU_Defines.DEFAULT_VERTEXCOLOR_SHADER;
+		string path;
 
 		HEU_PipelineType pipeline = HEU_RenderingPipelineDefines.GetPipeline();
 		if (pipeline == HEU_PipelineType.HDRP)
 		{
-		    path = HEU_Defines.DEFAULT_VERTEXCOLOR_SHADER_HDRP;
+		    path = HEU_PluginSettings.UseSpecularShader ? HEU_Defines.DEFAULT_VERTEXCOLOR_SHADER_HDRP_SPECULAR : HEU_Defines.DEFAULT_VERTEXCOLOR_SHADER_HDRP;
 		}
 		else if (pipeline == HEU_PipelineType.URP)
 		{
-		    path = HEU_Defines.DEFAULT_VERTEXCOLOR_SHADER_URP;
+		    path = HEU_PluginSettings.UseSpecularShader ? HEU_Defines.DEFAULT_VERTEXCOLOR_SHADER_URP_SPECULAR : HEU_Defines.DEFAULT_VERTEXCOLOR_SHADER_URP;
+		}
+		else
+		{
+		    if (HEU_PluginSettings.UseLegacyShaders)
+		    {
+			path = HEU_Defines.DEFAULT_VERTEXCOLOR_SHADER_SPECULAR_LEGACY;
+		    }
+		    else
+		    {
+			path = HEU_PluginSettings.UseSpecularShader ? HEU_Defines.DEFAULT_VERTEXCOLOR_SHADER_SPECULAR : HEU_Defines.DEFAULT_VERTEXCOLOR_SHADER;
+		    }
 		}
 
 		string ogPath = System.String.Copy(path);
@@ -656,15 +692,27 @@ namespace HoudiniEngineUnity
 	{
 	    get
 	    {
-		string path = HEU_Defines.DEFAULT_TRANSPARENT_SHADER;
+		string path;
+
 		HEU_PipelineType pipeline = HEU_RenderingPipelineDefines.GetPipeline();
 		if (pipeline == HEU_PipelineType.HDRP)
 		{
-		    path = HEU_Defines.DEFAULT_TRANSPARENT_SHADER_HDRP;
+		    path = HEU_PluginSettings.UseSpecularShader ? HEU_Defines.DEFAULT_TRANSPARENT_SHADER_HDRP_SPECULAR : HEU_Defines.DEFAULT_TRANSPARENT_SHADER_HDRP;
 		}
 		else if (pipeline == HEU_PipelineType.URP)
 		{
-		    path = HEU_Defines.DEFAULT_TRANSPARENT_SHADER_URP;
+		    path = HEU_PluginSettings.UseSpecularShader ? HEU_Defines.DEFAULT_TRANSPARENT_SHADER_URP_SPECULAR : HEU_Defines.DEFAULT_TRANSPARENT_SHADER_URP;
+		}
+		else
+		{
+		    if (HEU_PluginSettings.UseLegacyShaders)
+		    {
+			path = HEU_Defines.DEFAULT_TRANSPARENT_SHADER_SPECULAR_LEGACY;
+		    }
+		    else
+		    {
+			path = HEU_PluginSettings.UseSpecularShader ? HEU_Defines.DEFAULT_TRANSPARENT_SHADER_SPECULAR : HEU_Defines.DEFAULT_TRANSPARENT_SHADER;
+		    }
 		}
 
 		string ogPath = System.String.Copy(path);
@@ -945,6 +993,51 @@ namespace HoudiniEngineUnity
 		HEU_PluginStorage.Instance.Set("HAPI_UseHDRColor", value);
 	    }
 	}
+
+	public static bool UseSpecularShader
+	{
+	    get
+	    {
+		bool enabled = false;
+		HEU_PluginStorage.Instance.Get("HAPI_UseSpecularShader", out enabled, enabled);
+		return enabled;
+	    }
+	    set
+	    {
+		HEU_PluginStorage.Instance.Set("HAPI_UseSpecularShader", value);
+	    }
+	}
+
+	public static bool UseLegacyShaders
+	{
+	    get
+	    {
+		bool enabled = false;
+		HEU_PluginStorage.Instance.Get("HAPI_UseLegacyShaders", out enabled, enabled);
+		return enabled;
+	    }
+	    set
+	    {
+		HEU_PluginStorage.Instance.Set("HAPI_UseLegacyShaders", value);
+	    }
+	}
+
+	// Uses the hash instead of the name to shorten folder paths.
+	// Warning: Meant for unit tests only. Untested for regular use.
+	public static bool ShortenFolderPaths
+	{
+	    get
+	    {
+		bool enabled = false;
+		HEU_PluginStorage.Instance.Get("HAPI_ShortenFolderPaths", out enabled, enabled);
+		return enabled;
+	    }
+	    set
+	    {
+		HEU_PluginStorage.Instance.Set("HAPI_ShortenFolderPaths", value);
+	    }
+	}
+
     }
 
 }   // HoudiniEngineUnity

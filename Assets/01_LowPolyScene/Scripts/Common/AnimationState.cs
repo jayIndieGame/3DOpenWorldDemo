@@ -5,6 +5,9 @@ using UnityEngine;
 
 namespace OpenWorldDemo.LowPolyScene
 {
+    /// <summary>
+    /// 管理动画名字的类。不能在外部修改
+    /// </summary>
     internal static class StaticStringAndTuple
     {
         //导入素材的名字各不一致，统一管理一下吧
@@ -40,6 +43,10 @@ namespace OpenWorldDemo.LowPolyScene
         };
     }
 
+    /// <summary>
+    /// 根据ClipName来获取动画的类。都是静态方法。类名直接调用就行。
+    /// 由于动画素材来自于不同的两个模型，混合了一些武器和动作的。并且骨骼节点不太一样。动画会不正常。通过这个方法，把身上一些不正常的节点隐藏掉。
+    /// </summary>
     public class AnimationState
     {
         public static bool GetBowShowState(string AnimationName) => GetBoolTuple(AnimationName).Item1;

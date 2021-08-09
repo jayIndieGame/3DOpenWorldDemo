@@ -9,15 +9,31 @@ namespace OpenWorldDemo.LowPolyScene
 {
     public class GameManager : InstanceClass<GameManager>
     {
+        #region 全局公共变量
         public MouseManager mouseManager;
-        public PlayerCharacter playerCharacter;
-
-        internal Dictionary<CursorEnum, Texture2D> CursorTex;
         public CursorTexDic[] DicInspector;
+        [HideInInspector]
+        public CharacterStats playerCharacterStats;
+        #endregion
+
+        #region 程序集内部变量
+        internal Dictionary<CursorEnum, Texture2D> CursorTex;
+        #endregion
+
+        #region 私有变量
+
+
+        #endregion
+
+        #region Unity自启方法
+
+        protected override void Awake()
+        {
+            base.Awake();
+        }
 
         private void Start()
         {
-
             #region 实例化字典
             CursorTex = new Dictionary<CursorEnum, Texture2D>();
             for (int i = 0; i < DicInspector.Length; i++)
@@ -28,10 +44,36 @@ namespace OpenWorldDemo.LowPolyScene
                 }
             }
             #endregion
+            EventCenter.AddListensener(EventType.IEndGameEvent, PlayerDead);
         }
+
+        private void OnDestroy()
+        {
+            EventCenter.RemoveLinsener(EventType.IEndGameEvent,PlayerDead);
+        }
+
+        #endregion
+
+        public void RegisterPlayer(CharacterStats player)
+        {
+            playerCharacterStats = player;
+        }
+
+        public void PlayerDead()
+        {
+            //TODO
+            Debug.Log("Player dead GameManager");
+        }
+
+
     }
 
-    public class InstanceClass<T> : MonoBehaviour where T : Object
+    #region 辅助工作区域
+    /// <summary>
+    /// 泛型单例接口
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public class InstanceClass<T> : MonoBehaviour where T : InstanceClass<T>
     {
         private static T instance;
 
@@ -39,16 +81,19 @@ namespace OpenWorldDemo.LowPolyScene
         {
             get
             {
-                Assert.IsTrue(GameObject.FindObjectsOfType<T>().Length == 1);
+                Assert.IsTrue(FindObjectsOfType<T>().Length == 1);
 
                 return instance;
             }
             set { }
         }
 
-        private void Awake()
+        protected virtual void Awake()
         {
-            instance = GameObject.FindObjectOfType<T>();
+            if (instance == null)
+            {
+                instance = this as T;
+            }
         }
 
     }
@@ -59,4 +104,7 @@ namespace OpenWorldDemo.LowPolyScene
         public CursorEnum CursorType;
         public Texture2D CursorTexture;
     }
+    #endregion
+
+
 }

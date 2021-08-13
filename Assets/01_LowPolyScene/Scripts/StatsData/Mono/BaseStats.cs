@@ -110,5 +110,7 @@ namespace OpenWorldDemo.LowPolyScene
 
         public virtual int TakeDamage(BaseStats attacker, BaseStats defender,bool isCritical) =>
             CurrentHealth = Mathf.Max(CurrentHealth -  DamageCalculate(attacker, defender,isCritical), 0);
+
+
     }
 }

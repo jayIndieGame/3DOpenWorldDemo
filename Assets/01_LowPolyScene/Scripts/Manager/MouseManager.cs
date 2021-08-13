@@ -24,6 +24,7 @@ namespace OpenWorldDemo.LowPolyScene
         #endregion
 
         #region Unity自启动方法
+
         private void Update()
         {
             SetCurseTexture();
@@ -80,7 +81,6 @@ namespace OpenWorldDemo.LowPolyScene
             }
 
         }
-
         #endregion
 
     }

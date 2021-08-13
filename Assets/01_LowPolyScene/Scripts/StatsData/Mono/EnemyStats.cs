@@ -46,6 +46,27 @@ namespace OpenWorldDemo.LowPolyScene
             }
             set => AttackData.AttackCoolDown = value;
         }
+        public float SkillAttackForce
+        {
+            get
+            {
+                if (AttackData != null)
+                    return AttackData.SkillAttackForce;
+                return 0;
+            }
+            set => AttackData.SkillAttackForce = value;
+        }
+
+        public float SkillCoolDown
+        {
+            get
+            {
+                if (AttackData != null)
+                    return AttackData.SkillCoolDown;
+                return 0;
+            }
+            set => AttackData.SkillCoolDown = value;
+        }
         #endregion
 
         #region ´ÓEnemyStatsData_SO get setÊý¾Ý
@@ -109,6 +130,8 @@ namespace OpenWorldDemo.LowPolyScene
             }
             set => EnemyStatsData.LookAroundTime = value;
         }
+
+
         #endregion
 
         public override int TakeDamage(BaseStats attacker, BaseStats defender,bool isCritical)

@@ -9,16 +9,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6ddb9c86adeb48de8a78c69b7da30ec3, type: 3}
-  m_Name: PlayerCharacteAttackData
+  m_Script: {fileID: 11500000, guid: caa23d79ddb547f692200ff611d71deb, type: 3}
+  m_Name: EnemySlimeAttackData
   m_EditorClassIdentifier: 
   MinDamage: 2
-  MaxDamage: 6
+  MaxDamage: 3
   CriticalPower: 2
   CriticalChance: 0.2
   SkillAttackRange: 0
-  SwordAttackDamage: 5
-  SwordAttackRange: 1.9
-  SwordAttackCoolDown: 1
-  BowAttackDamage: 15
-  BowAttackRange: 15
+  ShortRangeAttack: 1
+  AttackCoolDown: 1.5

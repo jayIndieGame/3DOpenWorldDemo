@@ -13,5 +13,9 @@ namespace OpenWorldDemo.LowPolyScene
 
         public float AttackCoolDown;
 
+        public float SkillAttackForce;
+
+        public float SkillCoolDown;
+
     }
 }

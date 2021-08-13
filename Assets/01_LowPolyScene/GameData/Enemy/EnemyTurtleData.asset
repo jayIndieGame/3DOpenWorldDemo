@@ -9,13 +9,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: caa23d79ddb547f692200ff611d71deb, type: 3}
-  m_Name: EnemSlimeAttackData
+  m_Script: {fileID: 11500000, guid: 93378b8f55fb4c83a5c5340affe59790, type: 3}
+  m_Name: EnemyTurtleData
   m_EditorClassIdentifier: 
-  MinDamage: 1
-  MaxDamage: 3
-  CriticalPower: 2
-  CriticalChance: 0.2
-  SkillAttackRange: 0
-  ShortRangeAttack: 1
-  AttackCoolDown: 1.5
+  MaxHealth: 25
+  CurrentHealth: 25
+  BaseDefense: 1
+  CurrentDefense: 1
+  Type: 0
+  IsGuard: 0
+  SightRange: 10
+  MaxChaseRange: 20
+  PatrolRange: 8
+  LookAroundTime: 3

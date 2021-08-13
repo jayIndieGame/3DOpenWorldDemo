@@ -8598,6 +8598,13 @@ AnimationClip:
   - time: 0.26666668
     functionName: HitEvent
     data: 
+    objectReferenceParameter: {fileID: 11500000, guid: 461c125722443da448aa5116c5587134, type: 3}
+    floatParameter: 0
+    intParameter: 0
+    messageOptions: 0
+  - time: 0.8333333
+    functionName: SetAgentStopFalse
+    data: 
     objectReferenceParameter: {fileID: 0}
     floatParameter: 0
     intParameter: 0

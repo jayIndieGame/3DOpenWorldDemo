@@ -14,5 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerStatsData_SO
   MaxHealth: 100
   CurrentHealth: 100
-  BaseDefense: 2
-  CurrentDefense: 1
+  BaseDefense: 10
+  CurrentDefense: 10

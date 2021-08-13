@@ -61,7 +61,7 @@ namespace OpenWorldDemo.LowPolyScene
 
         public void PlayerDead()
         {
-            //TODO
+            Time.timeScale = 0;
             Debug.Log("Player dead GameManager");
         }
 

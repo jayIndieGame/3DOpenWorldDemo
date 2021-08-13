@@ -33,7 +33,8 @@ namespace OpenWorldDemo.LowPolyScene
     public enum EnemyType
     {
         Slime,
-        Rocker
+        Rocker,
+        Grunt
     }
 
 }

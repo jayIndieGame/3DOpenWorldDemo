@@ -26,13 +26,14 @@ namespace OpenWorldDemo.LowPolyScene
         private ValueChangeEventListener<string> listener;
         private bool isCritical;
         private bool isDead;
+
+        private int deadFirstCount = 0;
         //人物属性
         private float Speed = 5f;
 
         //攻击相关
         private GameObject attackTarget;
         private float attackCoolDown;
-        private IEnumerator attackCoroutine;
 
         #endregion
 
@@ -60,14 +61,24 @@ namespace OpenWorldDemo.LowPolyScene
             GameManager.Instance.RegisterPlayer(characterStates);
             GameManager.Instance.mouseManager.OnMouseButtonClick += SetDestination;
             GameManager.Instance.mouseManager.OnMoveToAttackAction += AttackEvent;
-            attackCoroutine = MoveToAttackTarget();
         }
 
         private void Update()
         {
 
             isDead = characterStates.CurrentHealth <= 0;
-            if(isDead){ EventCenter.BroadCast(EventType.IEndGameEvent); return;}
+            if (isDead)
+            {
+                if (deadFirstCount == 0)
+                {
+                    EventCenter.BroadCast(EventType.IEndGameEvent);
+                    GameManager.Instance.mouseManager.OnMouseButtonClick -= SetDestination;
+                    GameManager.Instance.mouseManager.OnMoveToAttackAction -= AttackEvent;
+                }
+
+                deadFirstCount++;
+                return;
+            }
             
             attackCoolDown -= Time.deltaTime;
             SetAgentSpeed();
@@ -132,11 +143,7 @@ namespace OpenWorldDemo.LowPolyScene
         {
             agent.destination = point;
             agent.isStopped = false;
-            if (attackCoroutine != null)
-            {
-                StopCoroutine(attackCoroutine);
-                attackCoroutine = MoveToAttackTarget();
-            }
+            StopAllCoroutines();
         }
 
         #endregion
@@ -145,16 +152,16 @@ namespace OpenWorldDemo.LowPolyScene
 
         void AttackEvent(GameObject target)
         {
-
             if (target != null)
             {
                 attackTarget = target;
-                StartCoroutine(attackCoroutine);
+                StartCoroutine(MoveToAttackTarget());
             }
         }
 
         IEnumerator MoveToAttackTarget()
         {
+            FIRST:
             agent.isStopped = false;
             transform.LookAt(attackTarget.transform);
 
@@ -167,14 +174,29 @@ namespace OpenWorldDemo.LowPolyScene
 
             agent.isStopped = true;
 
-            if (attackCoolDown < 0)
+
+            while (attackTarget.GetComponent<EnemyStats>().CurrentHealth>0)
             {
-                isCritical = UnityEngine.Random.value < characterStates.CriticalChance;
-                animator.SetTrigger("Attack");
-                //冷却时间重置
-                attackCoolDown = characterStates.SwordAttackCoolDown;
+                //这个协程可能在这个while中由于各种不可抗力 使得人物超出了攻击范围
+                if (Vector3.Distance(transform.position, attackTarget.transform.position) >
+                   characterStates.SwordAttackRange) goto FIRST;
+
+                transform.LookAt(attackTarget.transform);
+                if (attackCoolDown < 0)
+                {
+                    isCritical = UnityEngine.Random.value < characterStates.CriticalChance;
+                    animator.SetTrigger("Attack");
+                    //冷却时间重置
+                    attackCoolDown = characterStates.SwordAttackCoolDown;
+                }
+
+                yield return null;
             }
+
+            agent.isStopped = false;
+
         }
+
         //通过动画中的事件调用的
         void HitEvent() => attackTarget.GetComponent<EnemyStats>().TakeDamage(characterStates, attackTarget.GetComponent<EnemyStats>(), isCritical);
         #endregion

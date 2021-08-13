@@ -17,16 +17,17 @@ namespace OpenWorldDemo.LowPolyScene
         //身上的组件
         private NavMeshAgent agent;
         private Animator animator;
-        private EnemyStats enemyStats;
+        protected EnemyStats enemyStats;
 
         //游戏运行时需要存储的数据
-        private GameObject attackTarget;
+        protected GameObject attackTarget;
         private Vector3 originVector3;//初始位置的点
         private Vector3 everyOriginPosition;//每次追击开始位置的点
         private Vector3 wayPoint;//巡逻的点
-        private EnemyStateEnum state;
+        protected EnemyStateEnum state;
         private NavMeshHit hit;
         private float lastAttackTime;
+        private float skillCoolDown;
         private float speed;
         private float remainLookAtTime;
         private bool isCritical;
@@ -34,7 +35,7 @@ namespace OpenWorldDemo.LowPolyScene
         //Animatior相关
         private bool isWalk;
         private bool isChase;
-        private bool isFollow;
+        protected bool isFollow;
         private bool isDead;
 
         //guard->chase 第一次进入chase count=0
@@ -44,7 +45,7 @@ namespace OpenWorldDemo.LowPolyScene
         #endregion
 
         #region Unity自启动
-        private void Awake()
+        protected virtual void Awake()
         {
             agent = GetComponent<NavMeshAgent>();
             enemyStats = GetComponent<EnemyStats>();
@@ -53,25 +54,26 @@ namespace OpenWorldDemo.LowPolyScene
             everyOriginPosition = transform.position;
             speed = agent.speed;
             remainLookAtTime = enemyStats.LookAroundTime;
-            guardLookRotation = Quaternion.identity;
+
             EventCenter.AddListensener(EventType.IEndGameEvent,PlayerDead);
         }
 
-        private void Start()
+        protected virtual void Start()
         {
+            guardLookRotation = enemyStats.Type == EnemyType.Grunt ? Quaternion.Euler(0, 180, 0): Quaternion.identity;
             if (enemyStats.IsGuard)
             {
-                state = EnemyStateEnum.PATROL;
+                state = EnemyStateEnum.GUARD;
             }
             else
             {
-                state = EnemyStateEnum.GUARD;
+                state = EnemyStateEnum.PATROL;
                 GetRightWayPoint();
             }
             originVector3 = transform.position;
         }
 
-        void Update()
+        protected virtual void Update()
         {
 
             if (GameManager.Instance.playerCharacterStats.CurrentHealth == 0) return;
@@ -85,6 +87,7 @@ namespace OpenWorldDemo.LowPolyScene
             SwitchState();
             SwitchAnimation();
             lastAttackTime -= Time.deltaTime;
+            skillCoolDown -= Time.deltaTime;
         }
 
 
@@ -174,14 +177,13 @@ namespace OpenWorldDemo.LowPolyScene
 
             if (Vector3.Distance(transform.position, everyOriginPosition) > enemyStats.MaxChaseRange)
             {
-                ChangeAnimatorState(false, true, false);
                 state = enemyStats.IsGuard ? EnemyStateEnum.GUARD : EnemyStateEnum.PATROL;
                 return;
             }
-            ChangeAnimatorState(false, true, false);
+            ChangeAnimatorState(false, true, true);
             if (TargetInAttackRange() || TargetInSkillRange())
             {
-
+                ChangeAnimatorState(false, true, false);
                 agent.isStopped = true;
                 if (lastAttackTime < 0)
                 {
@@ -189,10 +191,7 @@ namespace OpenWorldDemo.LowPolyScene
                     lastAttackTime = enemyStats.AttackCoolDown;
                 }
             }
-            else
-            {
-                agent.isStopped = false;
-            }
+
 
             count++;
         }
@@ -205,19 +204,19 @@ namespace OpenWorldDemo.LowPolyScene
         void AttackPlayer()
         {
             isCritical = UnityEngine.Random.value < enemyStats.CriticalChance;
-
-            if (TargetInAttackRange())
+            transform.rotation = Quaternion.Lerp(transform.rotation,
+                Quaternion.LookRotation(attackTarget.transform.position - transform.position), 0.4f);
+            if (TargetInSkillRange() && skillCoolDown <0)
+            {
+                //技能不能暴击
+                isCritical = false;
+                animator.SetTrigger("Skill");
+                skillCoolDown = enemyStats.SkillCoolDown;
+            }
+            else if (TargetInAttackRange())
             {
                 animator.SetTrigger("Attack");
-
             }
-            else if(TargetInSkillRange())
-            {
-                animator.SetTrigger("Skill");
-            }
-
-            
-
         }
         
         /// <summary>
@@ -226,7 +225,15 @@ namespace OpenWorldDemo.LowPolyScene
         void HitEvent()
         {
             if (attackTarget == null) return;
+            if(!TargetInAttackRange())  return;
             attackTarget.GetComponent<BaseStats>().TakeDamage(enemyStats, attackTarget.GetComponent<BaseStats>(), isCritical);
+        }
+        /// <summary>
+        /// 当攻击动画结束以后，才将怪物的移动功能打开
+        /// </summary>
+        void SetAgentStopFalse()
+        {
+            agent.isStopped = false;
         }
         #endregion
 
@@ -319,13 +326,11 @@ namespace OpenWorldDemo.LowPolyScene
                 return;
             }
             Gizmos.color = Color.blue;
-            Gizmos.DrawWireSphere(originVector3, enemyStats.PatrolRange);
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(transform.position, enemyStats.SightRange);
+            Gizmos.DrawWireSphere(originVector3, 3);
 
         }
         bool TargetInAttackRange() => (attackTarget != null) && Vector3.Distance(attackTarget.transform.position, transform.position) <= enemyStats.ShortRangeAttack;
-        bool TargetInSkillRange() => (attackTarget != null) && Vector3.Distance(attackTarget.transform.position, transform.position) <= enemyStats.SkillAttackRange;
+        bool TargetInSkillRange() => (attackTarget != null) && Vector3.Distance(attackTarget.transform.position, transform.position) <= enemyStats.SkillAttackRange && enemyStats.SkillAttackRange >= 0;
         Vector3 GetMaybeWrongWayPoint() => new Vector3(originVector3.x + UnityEngine.Random.Range(-enemyStats.PatrolRange, enemyStats.PatrolRange),
             transform.position.y, originVector3.z + UnityEngine.Random.Range(-enemyStats.PatrolRange, enemyStats.PatrolRange));
         void GetRightWayPoint() =>
